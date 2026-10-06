@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { gift } from "@/content/gift";
-import { ease, seeded, withName } from "@/lib/motion";
+import { useGift, useWithName } from "@/content/GiftContext";
+import { ease, seeded } from "@/lib/motion";
 import { constellationFor } from "./constellation";
+import { WriteBack } from "./WriteBack";
 
 export type InkPoint = { x: number; y: number };
 
@@ -22,23 +23,28 @@ const T = {
   final: 75,        // the very faint last line, only if she stays
 };
 
-const { ending, easterEggs } = gift;
-const memories = [
-  ...gift.scrapbook.photos.map((p) => ({ title: p.title, text: p.note })),
-  ...gift.museum.exhibits.map((e) => ({ title: e.title, text: e.description })),
-  ...gift.garden.objects.map((o) => ({ title: o.title, text: o.text })),
-].slice(0, 10);
-
-// memory stars sit around the edges, never over the shape or the words
-const memorySpots = memories.map((_, i) => {
-  const a = (i / memories.length) * Math.PI * 2 + seeded(i, 51) * 0.5;
-  return { x: 50 + Math.cos(a) * (36 + seeded(i, 52) * 8), y: 34 + Math.sin(a) * (24 + seeded(i, 53) * 6) };
-});
-
-const shape = constellationFor(gift.recipientInitial);
-const dateDigits = easterEggs.importantDate.replace(/\D/g, "").split("").map(Number);
-
 export function UniverseScene({ ink }: { ink: InkPoint[] }) {
+  const gift = useGift();
+  const withName = useWithName();
+  const { ending, easterEggs } = gift;
+  const { memories, memorySpots, shape, dateDigits } = useMemo(() => {
+    const memories = [
+      ...gift.scrapbook.photos.map((p) => ({ title: p.title, text: p.note, image: p.image })),
+      ...gift.museum.exhibits.map((e) => ({ title: e.title, text: e.description, image: e.image })),
+      ...gift.garden.objects.map((o) => ({ title: o.title, text: o.text, image: o.image })),
+    ].filter((m) => m.title || m.text).slice(0, 10);
+    // memory stars sit around the edges, never over the shape or the words
+    const memorySpots = memories.map((_, i) => {
+      const a = (i / memories.length) * Math.PI * 2 + seeded(i, 51) * 0.5;
+      return { x: 50 + Math.cos(a) * (36 + seeded(i, 52) * 8), y: 34 + Math.sin(a) * (24 + seeded(i, 53) * 6) };
+    });
+    return {
+      memories,
+      memorySpots,
+      shape: constellationFor(gift.recipientInitial),
+      dateDigits: gift.easterEggs.importantDate.replace(/\D/g, "").split("").map(Number),
+    };
+  }, [gift]);
   const canvas = useRef<HTMLCanvasElement>(null);
   const reduced = !!useReducedMotion();
   const [elapsed, setElapsed] = useState(0);
@@ -143,6 +149,19 @@ export function UniverseScene({ ink }: { ink: InkPoint[] }) {
       // the constellation
       const b = box();
       const P = ([x, y]: [number, number]) => [b.x + x * b.sw, b.y + y * b.s] as const;
+
+      // when the last line is drawn, a soft breath of light behind it
+      const done = T.lines + shape.segments.length * 0.5 + 0.9;
+      const pulse = reduced ? 0 : Math.exp(-((t - done - 1.2) ** 2) / 0.9) * 0.55;
+      if (pulse > 0.01) {
+        const cx = b.x + b.sw / 2, cy = b.y + b.s / 2;
+        const bloom = ctx.createRadialGradient(cx, cy, 0, cx, cy, b.s);
+        bloom.addColorStop(0, "rgba(255,236,196,0.35)");
+        bloom.addColorStop(1, "rgba(255,236,196,0)");
+        ctx.globalAlpha = pulse;
+        ctx.fillStyle = bloom;
+        ctx.fillRect(cx - b.s, cy - b.s, b.s * 2, b.s * 2);
+      }
       ctx.strokeStyle = "#f1e3c0";
       ctx.lineWidth = 0.8;
       shape.segments.forEach(([p, q], i) => {
@@ -191,7 +210,7 @@ export function UniverseScene({ ink }: { ink: InkPoint[] }) {
     };
     raf = requestAnimationFrame(draw);
     return () => { cancelAnimationFrame(raf); removeEventListener("resize", resize); };
-  }, [ink, field, reduced, fromPaper]);
+  }, [ink, field, reduced, fromPaper, shape, dateDigits]);
 
   const after = (s: number) => reduced || elapsed >= s;
 
@@ -238,6 +257,7 @@ export function UniverseScene({ ink }: { ink: InkPoint[] }) {
             transition={{ duration: 0.8, ease: ease.out }}
             role="status"
           >
+            {memories[shown].image && <img className="memory-photo" src={memories[shown].image} alt="" />}
             <p className="eyebrow">{memories[shown].title}</p>
             <p>{memories[shown].text}</p>
           </motion.div>
@@ -255,6 +275,9 @@ export function UniverseScene({ ink }: { ink: InkPoint[] }) {
         <Line on={after(T.name)} className="u-name">{withName(ending.name)}</Line>
         <Line on={after(T.whisper)} className="u-whisper hand">{ending.whisper}</Line>
       </div>
+
+      {!reduced && after(T.whisper + 5) && <span className="u-shooting" aria-hidden="true" />}
+      <WriteBack show={after(T.whisper + 6)} />
 
       <Line on={!reduced && elapsed >= T.final} className="u-final hand">{easterEggs.finalMessage}</Line>
     </section>

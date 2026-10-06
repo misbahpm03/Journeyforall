@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
-import { gift } from "@/content/gift";
+import type { GiftContent } from "@/content/gift";
+import { GiftProvider, useGift } from "@/content/GiftContext";
 import { ease, useFinePointer, wait } from "@/lib/motion";
-import { AvailableProvider } from "./shared/Photo";
 import { Cursor } from "./shared/Cursor";
-import { SoundToggle, useAmbient } from "./shared/Sound";
+import { SoundProvider, SoundToggle, useSoundSystem } from "./shared/Sound";
 import { OpeningScene } from "./opening/OpeningScene";
 import { ScrapbookScene } from "./scrapbook/ScrapbookScene";
 import { MuseumScene } from "./museum/MuseumScene";
@@ -21,15 +21,13 @@ const marks: Partial<Record<Chapter, string>> = {
   scrapbook: "the scrapbook",
   museum: "the museum",
   garden: "the garden",
-  universe: "the sky",
 };
 
-export function GiftExperience({ available }: { available: string[] }) {
+export function GiftExperience({ content }: { content: GiftContent }) {
   const [chapter, setChapter] = useState<Chapter>("loading");
   const [ink, setInk] = useState<InkPoint[]>([]);
   const fine = useFinePointer();
-  const files = useMemo(() => new Set(available), [available]);
-  const sound = useAmbient(files.has(gift.audio.src));
+  const sound = useSoundSystem(content.audio.src, content.audio.volume);
 
   const go = (next: Chapter) => {
     window.scrollTo(0, 0);
@@ -39,9 +37,9 @@ export function GiftExperience({ available }: { available: string[] }) {
   useEffect(() => {
     if (chapter !== "loading") return;
     let live = true;
-    // Dev convenience: /#garden jumps straight to a chapter.
+    // /#garden etc. jumps straight to a chapter (handy while editing)
     const h = location.hash.slice(1) as Chapter;
-    const first = process.env.NODE_ENV !== "production" && chapters.includes(h) ? h : "opening";
+    const first = chapters.includes(h) ? h : "opening";
     Promise.all([document.fonts.ready, wait(2200)]).then(() => live && setChapter(first));
     return () => { live = false; };
   }, [chapter]);
@@ -54,12 +52,13 @@ export function GiftExperience({ available }: { available: string[] }) {
 
   return (
     <MotionConfig reducedMotion="user">
-      <AvailableProvider value={files}>
+      <GiftProvider value={content}>
+      <SoundProvider value={sound.value}>
         <main>
           <AnimatePresence mode="wait">
             {chapter === "loading" && <Loading key="loading" />}
             {chapter === "opening" && (
-              <OpeningScene key="opening" onOpen={sound.play} onDone={() => go("scrapbook")} />
+              <OpeningScene key="opening" onOpen={sound.begin} onDone={() => go("scrapbook")} />
             )}
             {chapter === "scrapbook" && <ScrapbookScene key="scrapbook" onDone={() => go("museum")} />}
             {chapter === "museum" && <MuseumScene key="museum" onDone={() => go("garden")} />}
@@ -75,7 +74,7 @@ export function GiftExperience({ available }: { available: string[] }) {
           {marks[chapter] && (
             <motion.p
               key={chapter}
-              className={`chrome chapter-mark ${chapter === "universe" ? "fade-late" : ""}`}
+              className="chrome chapter-mark"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1, transition: { delay: 1.2, duration: 1.4 } }}
               exit={{ opacity: 0, transition: { duration: 0.4 } }}
@@ -85,17 +84,19 @@ export function GiftExperience({ available }: { available: string[] }) {
           )}
         </AnimatePresence>
 
-        {sound.enabled && chapter !== "loading" && chapter !== "opening" && (
-          <SoundToggle playing={sound.playing} toggle={sound.toggle} />
+        {chapter !== "loading" && chapter !== "opening" && (
+          <div className={chapter === "universe" ? "recede" : undefined}><SoundToggle on={sound.on} toggle={sound.toggle} /></div>
         )}
-        {fine && <Cursor />}
+        {fine && <Cursor key={chapter} />}
         <div className="grain" aria-hidden="true" />
-      </AvailableProvider>
+      </SoundProvider>
+      </GiftProvider>
     </MotionConfig>
   );
 }
 
 function Loading() {
+  const gift = useGift();
   return (
     <motion.div
       className="fixed-scene loading"

@@ -2,16 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { gift } from "@/content/gift";
+import { useGift } from "@/content/GiftContext";
 import { ease, spring, useFinePointer } from "@/lib/motion";
 import { Photo } from "../shared/Photo";
 import { ScrapbookPhoto } from "./ScrapbookPhoto";
-import { Doodle } from "./Doodle";
-
-const { photos } = gift.scrapbook;
-const bridge = gift.museum.exhibits[0];
+import { Doodle, PressedLeaf, Ticket } from "./Doodle";
 
 export function ScrapbookScene({ onDone }: { onDone: () => void }) {
+  const gift = useGift();
+  const { photos } = gift.scrapbook;
   const page = useRef<HTMLDivElement>(null);
   const fine = useFinePointer();
   const [open, setOpen] = useState<number | null>(null);
@@ -63,10 +62,12 @@ export function ScrapbookScene({ onDone }: { onDone: () => void }) {
         <Doodle kind="squiggle" className="dd dd-2" />
         <Doodle kind="sprig" className="dd dd-3" />
         <Doodle kind="circle" className="dd dd-4" />
+        <Ticket className="eph eph-ticket" />
+        <PressedLeaf className="eph eph-leaf" />
 
         {photos.map((item, i) => (
           <ScrapbookPhoto
-            key={item.image}
+            key={i}
             item={item}
             index={i}
             draggable={fine}
@@ -109,7 +110,7 @@ export function ScrapbookScene({ onDone }: { onDone: () => void }) {
 }
 
 function Opened({ index, onClose }: { index: number; onClose: () => void }) {
-  const item = photos[index];
+  const item = useGift().scrapbook.photos[index];
   const close = useRef<HTMLButtonElement>(null);
   useEffect(() => close.current?.focus(), []);
   const meta = [item.date, item.place].filter(Boolean).join("  ·  ");
@@ -126,7 +127,7 @@ function Opened({ index, onClose }: { index: number; onClose: () => void }) {
       onClick={onClose}
     >
       <div className={`sb-open-inner sb-open-${item.aspect}`} onClick={(e) => e.stopPropagation()}>
-        <motion.div className="sb-frame sb-open-frame" layoutId={`sb-${index}`} transition={spring.paper}>
+        <motion.div className="sb-frame sb-open-frame" layoutId={`sb-${index}`} transition={{ duration: 0.7, ease: ease.inOut }}>
           <Photo src={item.image} alt={item.alt} aspect={item.aspect} eager />
         </motion.div>
         <motion.div
@@ -149,6 +150,8 @@ function Opened({ index, onClose }: { index: number; onClose: () => void }) {
    corner. Lifting it carries her into the museum — the photograph
    becomes the first artwork. */
 function BridgeToMuseum({ onDone }: { onDone: () => void }) {
+  const gift = useGift();
+  const bridge = gift.museum.exhibits[0] ?? { image: "", alt: "" };
   const ref = useRef<HTMLButtonElement>(null);
   const [lift, setLift] = useState<DOMRect | null>(null);
 

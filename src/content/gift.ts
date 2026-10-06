@@ -1,31 +1,88 @@
 /* ─────────────────────────────────────────────────────────────
-   EVERYTHING PERSONAL LIVES IN THIS FILE.
+   The shape of everything personal, and the placeholder content a
+   fresh deployment starts with. Real content is edited at /admin
+   and stored in Vercel Blob — you shouldn't need to touch this
+   file per recipient.
 
-   • Anything in [SQUARE BRACKETS] is a placeholder — search this
-     file for "[" to find every one.
-   • Photos: drop files into /public/images/... using the exact
-     paths below. Until a file exists, an elegant paper placeholder
-     is shown instead (nothing breaks, no 404s).
-   • Empty strings ("") are simply not shown.
    • {name} anywhere is replaced with recipientName.
-   • Colours live in src/app/globals.css under ":root".
+   • Empty strings ("") are simply not shown.
+   • An empty image ("") shows an elegant paper placeholder.
    ───────────────────────────────────────────────────────────── */
 
 export type Aspect = "portrait" | "landscape" | "square";
+export const aspects: Aspect[] = ["portrait", "landscape", "square"];
 
 export type GardenKind = "flower" | "butterfly" | "tree" | "pond" | "lantern" | "moon";
+export const gardenKinds: GardenKind[] = ["flower", "butterfly", "tree", "pond", "lantern", "moon"];
 
-export const gift = {
-  /* Her name, exactly as you'd write it to her. */
+export type ScrapbookPhoto = {
+  image: string;
+  alt: string;
+  aspect: Aspect;
+  title: string;
+  note: string;      // shown when she opens the photo
+  scribble: string;  // tiny handwriting on the page beside it
+  date: string;
+  place: string;
+  secret: string;    // shown only on press-and-hold
+};
+
+export type Exhibit = {
+  image: string;
+  alt: string;
+  aspect: Aspect;
+  title: string;
+  medium: string;
+  description: string;
+};
+
+export type GardenObject = { kind: GardenKind; title: string; text: string; image: string };
+
+export type GiftContent = {
+  recipientName: string;
+  recipientInitial: string; // A–Z draws it in the final sky; "" draws a flower
+  pageTitle: string;
+  loading: string;
+  opening: { line1: string; line2: string; hint: string };
+  scrapbook: { heading: string; subheading: string; photos: ScrapbookPhoto[]; next: string };
+  museum: { title: string; subtitle: string; exhibits: Exhibit[]; exit: string };
+  garden: { intro: string; objects: GardenObject[]; note: string; findBeforeNote: number };
+  letter: { greeting: string; paragraphs: string[]; closing: string; signature: string; next: string; image: string };
+  ending: { line1: string; line2: string; name: string; whisper: string };
+  easterEggs: {
+    secretStar: string;
+    hiddenNote: string;
+    finalMessage: string;
+    importantDate: string; // DD.MM — drawn as a tiny star cluster
+    importantDateLabel: string;
+  };
+  audio: { src: string; volume: number };
+  /* lets her write back from the last page, delivered by EmailJS */
+  writeBack: {
+    enabled: boolean;
+    invite: string;
+    placeholder: string;
+    button: string;
+    thanks: string;
+    emailjs: { serviceId: string; templateId: string; publicKey: string };
+  };
+  theme: Record<ThemeKey, string>;
+};
+
+export const themeKeys = ["ivory", "cream", "burgundy", "rose", "gold", "charcoal", "warm-black", "night"] as const;
+export type ThemeKey = (typeof themeKeys)[number];
+
+export const blankPhoto = (): ScrapbookPhoto => ({
+  image: "", alt: "", aspect: "portrait", title: "", note: "", scribble: "", date: "", place: "", secret: "",
+});
+export const blankExhibit = (): Exhibit => ({
+  image: "", alt: "", aspect: "portrait", title: "", medium: "", description: "",
+});
+
+export const defaultContent: GiftContent = {
   recipientName: "[HER NAME]",
-
-  /* One letter (A–Z). The final constellation draws it.
-     Leave as "" for an abstract flower instead. */
   recipientInitial: "",
-
-  /* Shown in the browser tab. Keep it quiet. */
   pageTitle: "for you",
-
   loading: "preparing something…",
 
   opening: {
@@ -34,127 +91,44 @@ export const gift = {
     hint: "open it",
   },
 
-  /* ── CHAPTER 1 · the scrapbook ─────────────────────────────
-     4–8 photos works best. `note` is the handwriting that
-     appears when she opens the photo. `scribble` is the tiny
-     annotation written on the page next to it (optional).
-     `secret` appears only if she presses and holds the photo. */
   scrapbook: {
     heading: "Some moments are small.",
     subheading: "They still stay.",
     photos: [
-      {
-        image: "/images/scrapbook/photo-01.jpg",
-        alt: "[Describe photo 01 — e.g. her laughing at the café]",
-        aspect: "portrait" as Aspect,
-        title: "A little moment",
-        note: "One of those moments I wanted to keep.",
-        scribble: "[a tiny annotation]",
-        date: "",
-        place: "",
-        secret: "",
-      },
-      {
-        image: "/images/scrapbook/photo-02.jpg",
-        alt: "[Describe photo 02]",
-        aspect: "landscape" as Aspect,
-        title: "[TITLE]",
-        note: "[PERSONAL MESSAGE about this photo]",
-        scribble: "",
-        date: "[DATE]",
-        place: "",
-        secret: "",
-      },
-      {
-        image: "/images/scrapbook/photo-03.jpg",
-        alt: "[Describe photo 03]",
-        aspect: "square" as Aspect,
-        title: "[TITLE]",
-        note: "[PERSONAL MESSAGE about this photo]",
-        scribble: "[annotation]",
-        date: "",
-        place: "[PLACE]",
-        secret: "",
-      },
-      {
-        image: "/images/scrapbook/photo-04.jpg",
-        alt: "[Describe photo 04]",
-        aspect: "portrait" as Aspect,
-        title: "[TITLE]",
-        note: "[PERSONAL MESSAGE about this photo]",
-        scribble: "",
-        date: "[DATE]",
-        place: "",
-        secret: "",
-      },
-      {
-        image: "/images/scrapbook/photo-05.jpg",
-        alt: "[Describe photo 05]",
-        aspect: "portrait" as Aspect,
-        title: "[TITLE]",
-        note: "[PERSONAL MESSAGE about this photo]",
-        scribble: "[annotation]",
-        date: "",
-        place: "",
-        secret: "",
-      },
+      { ...blankPhoto(), title: "A little moment", note: "One of those moments I wanted to keep.", scribble: "[a tiny annotation]" },
+      { ...blankPhoto(), aspect: "landscape", title: "[TITLE]", note: "[PERSONAL MESSAGE about this photo]", date: "[DATE]" },
+      { ...blankPhoto(), aspect: "square", title: "[TITLE]", note: "[PERSONAL MESSAGE about this photo]", scribble: "[annotation]", place: "[PLACE]" },
+      { ...blankPhoto(), title: "[TITLE]", note: "[PERSONAL MESSAGE about this photo]", date: "[DATE]" },
+      { ...blankPhoto(), title: "[TITLE]", note: "[PERSONAL MESSAGE about this photo]", scribble: "[annotation]" },
     ],
-    /* The button at the bottom of the page that leads on. */
     next: "there's a little more",
   },
 
-  /* ── CHAPTER 2 · the museum ───────────────────────────────── */
   museum: {
     title: "The Museum of {name}",
     subtitle: "A very small exhibition about someone rather difficult to forget.",
     exhibits: [
-      {
-        image: "/images/museum/exhibit-01.jpg",
-        alt: "[Describe exhibit 01]",
-        aspect: "portrait" as Aspect,
-        title: "The Smile",
-        medium: "[e.g. Photograph, the afternoon of …]",
-        description: "[A small observation about her.]",
-      },
-      {
-        image: "/images/museum/exhibit-02.jpg",
-        alt: "[Describe exhibit 02]",
-        aspect: "landscape" as Aspect,
-        title: "The Moment",
-        medium: "[medium / date]",
-        description: "[A memory.]",
-      },
-      {
-        image: "/images/museum/exhibit-03.jpg",
-        alt: "[Describe exhibit 03]",
-        aspect: "portrait" as Aspect,
-        title: "Something I Never Said",
-        medium: "[medium / date]",
-        description: "[A short message.]",
-      },
+      { ...blankExhibit(), title: "The Smile", medium: "[e.g. Photograph, the afternoon of …]", description: "[A small observation about her.]" },
+      { ...blankExhibit(), aspect: "landscape", title: "The Moment", medium: "[medium / date]", description: "[A memory.]" },
+      { ...blankExhibit(), title: "Something I Never Said", medium: "[medium / date]", description: "[A short message.]" },
     ],
     exit: "step outside",
   },
 
-  /* ── CHAPTER 3 · the garden ───────────────────────────────
-     5–8 objects. Each one she finds makes the garden a little
-     more alive. kinds: flower, butterfly, tree, pond, lantern, moon */
   garden: {
     intro: "Have a look around.",
     objects: [
-      { kind: "flower" as GardenKind, title: "Something I like about you", text: "[WHAT I LIKE ABOUT HER]" },
-      { kind: "butterfly" as GardenKind, title: "A memory", text: "[PERSONAL MEMORY]" },
-      { kind: "tree" as GardenKind, title: "A story", text: "[A SHORT STORY]" },
-      { kind: "pond" as GardenKind, title: "A thought I never said out loud", text: "[HONEST THOUGHT]" },
-      { kind: "lantern" as GardenKind, title: "Something small I noticed", text: "[A TINY OBSERVATION]" },
-      { kind: "moon" as GardenKind, title: "When I think of you", text: "[WHAT COMES TO MIND]" },
+      { kind: "flower", title: "Something I like about you", text: "[WHAT I LIKE ABOUT HER]", image: "" },
+      { kind: "butterfly", title: "A memory", text: "[PERSONAL MEMORY]", image: "" },
+      { kind: "tree", title: "A story", text: "[A SHORT STORY]", image: "" },
+      { kind: "pond", title: "A thought I never said out loud", text: "[HONEST THOUGHT]", image: "" },
+      { kind: "lantern", title: "Something small I noticed", text: "[A TINY OBSERVATION]", image: "" },
+      { kind: "moon", title: "When I think of you", text: "[WHAT COMES TO MIND]", image: "" },
     ],
-    /* The paper note that appears after she's found a few things. */
     note: "a letter",
     findBeforeNote: 4,
   },
 
-  /* ── CHAPTER 4 · the letter ─────────────────────────────── */
   letter: {
     greeting: "Dear {name},",
     paragraphs: [
@@ -166,9 +140,9 @@ export const gift = {
     closing: "[sign-off, e.g. “Yours,” or just a dash]",
     signature: "[YOUR NAME]",
     next: "one more thing",
+    image: "",
   },
 
-  /* ── CHAPTER 5 · the universe ───────────────────────────── */
   ending: {
     line1: "Out of all the people I could have met…",
     line2: "I'm really glad I met you.",
@@ -176,28 +150,51 @@ export const gift = {
     whisper: "That's all.",
   },
 
-  /* ── hidden things ──────────────────────────────────────── */
   easterEggs: {
-    /* Tap the one slightly brighter star in the garden sky 3×. */
     secretStar: "You found this.",
-    /* Shown when she presses and holds a scrapbook photo that has
-       no `secret` of its own. */
     hiddenNote: "I almost didn't include this one.",
-    /* Appears very faintly if she stays on the final screen. */
     finalMessage: "Thank you for staying until the end.",
-    /* A small cluster in the final sky is drawn from this date
-       (DD.MM). Tapping it shows the label. Leave "" to hide it. */
     importantDate: "",
     importantDateLabel: "[what this date was]",
   },
 
-  /* ── optional sound ─────────────────────────────────────────
-     Drop a quiet piano/ambient track at /public/audio/ambient.mp3.
-     If the file doesn't exist, no sound toggle is shown at all. */
-  audio: {
-    src: "/audio/ambient.mp3",
-    volume: 0.35,
+  audio: { src: "", volume: 0.35 },
+
+  writeBack: {
+    enabled: false,
+    invite: "write something back?",
+    placeholder: "…",
+    button: "send",
+    thanks: "Sent. I'll read it slowly.",
+    emailjs: { serviceId: "", templateId: "", publicKey: "" },
+  },
+
+  theme: {
+    ivory: "#f3ede1",
+    cream: "#e8dfcf",
+    burgundy: "#6b3a3a",
+    rose: "#b88989",
+    gold: "#b69b62",
+    charcoal: "#121212",
+    "warm-black": "#090909",
+    night: "#111a2b",
   },
 };
 
-export type Gift = typeof gift;
+/* Stored content is merged over the defaults, so a field added to
+   the code later still has a sensible value on older deployments.
+   Arrays are taken whole (they're lists the user curated). */
+export function withDefaults<T>(base: T, saved: unknown): T {
+  if (Array.isArray(base)) {
+    if (!Array.isArray(saved)) return base;
+    const item = base[0];
+    return (item && typeof item === "object" ? saved.map((s) => withDefaults(item, s)) : saved) as T;
+  }
+  if (base && typeof base === "object") {
+    const s = (saved && typeof saved === "object" ? saved : {}) as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.entries(base).map(([k, v]) => [k, withDefaults(v, s[k])]),
+    ) as T;
+  }
+  return (typeof saved === typeof base ? saved : base) as T;
+}

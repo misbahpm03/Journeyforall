@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { gift } from "@/content/gift";
+import { useGift, useWithName } from "@/content/GiftContext";
+import { useSound } from "../shared/Sound";
 import { ease, spring } from "@/lib/motion";
 
 type Phase = "dark" | "line1" | "line2" | "envelope" | "opening" | "out" | "fill";
@@ -14,6 +15,9 @@ const timeline: [Phase, number][] = [
 ];
 
 export function OpeningScene({ onOpen, onDone }: { onOpen: () => void; onDone: () => void }) {
+  const gift = useGift();
+  const withName = useWithName();
+  const sound = useSound();
   const [phase, setPhase] = useState<Phase>("dark");
   const [fillFrom, setFillFrom] = useState<string | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -28,6 +32,7 @@ export function OpeningScene({ onOpen, onDone }: { onOpen: () => void; onDone: (
   const open = () => {
     if (phase !== "envelope") return;
     onOpen();
+    sound.rustle();
     setPhase("opening");
     setTimeout(() => setPhase("out"), 900);
     setTimeout(() => {
@@ -47,6 +52,10 @@ export function OpeningScene({ onOpen, onDone }: { onOpen: () => void; onDone: (
       className="fixed-scene opening"
       aria-label="An envelope"
       exit={{ opacity: 1 }}
+      onPointerMove={(e) => {
+        e.currentTarget.style.setProperty("--mx", `${e.clientX}px`);
+        e.currentTarget.style.setProperty("--my", `${e.clientY}px`);
+      }}
     >
       <div className="opening-words" aria-live="polite">
         <motion.p
@@ -100,6 +109,9 @@ export function OpeningScene({ onOpen, onDone }: { onOpen: () => void; onDone: (
           <span className="hand">for you</span>
         </motion.span>
         <span className="env-pocket" />
+        <motion.span className="env-address hand" animate={{ opacity: opened ? 0 : 0.8 }} transition={{ duration: 0.6 }}>
+          {withName("for {name}")}
+        </motion.span>
         <motion.span
           className="env-flap"
           style={{ zIndex: at("out") ? 1 : 5 }}
@@ -111,7 +123,7 @@ export function OpeningScene({ onOpen, onDone }: { onOpen: () => void; onDone: (
           animate={opened ? { scale: 0.6, opacity: 0, y: -6 } : { scale: 1, opacity: 1 }}
           transition={{ duration: 0.5, ease: ease.out }}
         >
-          ✦
+          {gift.recipientInitial || "✦"}
         </motion.span>
       </motion.button>
 

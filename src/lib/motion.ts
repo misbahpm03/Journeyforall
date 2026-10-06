@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { gift } from "@/content/gift";
 
 /* One place for every easing and duration, so the whole piece
    moves with the same hand. */
@@ -27,8 +26,6 @@ export function seeded(i: number, salt = 1) {
   const x = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453;
   return x - Math.floor(x);
 }
-
-export const withName = (s: string) => s.replaceAll("{name}", gift.recipientName);
 
 /* Real mouse (hover exists) vs touch. */
 export function useFinePointer() {

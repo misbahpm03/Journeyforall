@@ -2,17 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { gift } from "@/content/gift";
-import { ease, withName } from "@/lib/motion";
+import { useGift, useWithName } from "@/content/GiftContext";
+import type { GiftContent } from "@/content/gift";
+import { ease } from "@/lib/motion";
 import type { InkPoint } from "../universe/UniverseScene";
-
-const { letter } = gift;
 
 /* The letter is revealed a sentence at a time, at roughly the pace
    it would be read — never a typewriter. */
 type Line = { text: string; para: number; at: number };
 
-function schedule(reduced: boolean) {
+function schedule(letter: GiftContent["letter"], withName: (s: string) => string, reduced: boolean) {
   const lines: Line[] = [];
   let t = 1.2;
   const push = (text: string, para: number) => {
@@ -30,8 +29,10 @@ function schedule(reduced: boolean) {
 }
 
 export function LetterScene({ onDone }: { onDone: (ink: InkPoint[]) => void }) {
+  const { letter } = useGift();
+  const withName = useWithName();
   const reduced = !!useReducedMotion();
-  const { lines, end } = useMemo(() => schedule(reduced), [reduced]);
+  const { lines, end } = useMemo(() => schedule(letter, withName, reduced), [letter, withName, reduced]);
   const [skipped, setSkipped] = useState(false);
   const [finished, setFinished] = useState(false);
   const [ink, setInk] = useState<InkPoint[] | null>(null);
@@ -73,6 +74,19 @@ export function LetterScene({ onDone }: { onDone: (ink: InkPoint[]) => void }) {
         animate={ink ? { opacity: 0, filter: "blur(6px)" } : { opacity: 1, filter: "blur(0px)" }}
         transition={{ duration: 1.6, ease: ease.soft }}
       >
+        {letter.image && (
+          <motion.span
+            className="letter-photo"
+            initial={{ opacity: 0, rotate: 9, y: -8 }}
+            animate={{ opacity: 1, rotate: 4, y: 0 }}
+            transition={{ delay: 0.6, duration: 1.4, ease: ease.out }}
+          >
+            <img src={letter.image} alt="" />
+            <svg className="letter-clip" viewBox="0 0 20 54" aria-hidden="true">
+              <path d="M6 50 V10 a4 4 0 0 1 8 0 V44 a6 6 0 0 1 -12 0 V14" fill="none" stroke="#9aa0a3" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </motion.span>
+        )}
         <p className="letter-greeting"><Ink at={delay(lines[0].at)}>{lines[0].text}</Ink></p>
         {letter.paragraphs.map((_, pi) => (
           <p key={pi} className="letter-p">
@@ -84,6 +98,15 @@ export function LetterScene({ onDone }: { onDone: (ink: InkPoint[]) => void }) {
         <div className="letter-sign">
           <Ink at={skipped ? 0 : end}>{letter.closing}</Ink>
           <Ink at={skipped ? 0 : end + 1.2} className="letter-signature">{letter.signature}</Ink>
+          <svg className="letter-flourish" viewBox="0 0 160 24" aria-hidden="true">
+            <motion.path
+              d="M4 16 C 30 22, 60 4, 90 12 S 140 20, 156 6"
+              fill="none" stroke="var(--burgundy)" strokeWidth="1.3" strokeLinecap="round"
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 0.7 }}
+              transition={{ delay: (skipped ? 0 : end) + 2, duration: 1.4, ease: ease.inOut }}
+            />
+          </svg>
         </div>
       </motion.div>
 
@@ -98,8 +121,15 @@ export function LetterScene({ onDone }: { onDone: (ink: InkPoint[]) => void }) {
         {letter.next} →
       </motion.button>
 
-      {!finished && (
-        <p className="sr-only">Tap anywhere to show the whole letter.</p>
+      {!skipped && (
+        <motion.p
+          className="eyebrow letter-skip"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 0.45, 0.45, 0] }}
+          transition={{ delay: 3, duration: 6, times: [0, 0.15, 0.8, 1] }}
+        >
+          tap to read it all at once
+        </motion.p>
       )}
 
       {ink && (

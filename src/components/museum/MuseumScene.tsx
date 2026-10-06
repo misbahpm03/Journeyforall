@@ -4,14 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import {
   AnimatePresence, motion, useMotionValue, useScroll, useSpring, useTransform, type MotionValue,
 } from "framer-motion";
-import { gift } from "@/content/gift";
-import { ease, withName } from "@/lib/motion";
+import { useGift, useWithName } from "@/content/GiftContext";
+import type { Exhibit } from "@/content/gift";
+import { ease } from "@/lib/motion";
 import { Photo } from "../shared/Photo";
 
-const { exhibits } = gift.museum;
-const panels = exhibits.length + 2; // title · exhibits · exit
-
 export function MuseumScene({ onDone }: { onDone: () => void }) {
+  const gift = useGift();
+  const withName = useWithName();
+  const { exhibits } = gift.museum;
+  const panels = exhibits.length + 2; // title · exhibits · exit
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
   const progress = useSpring(scrollYProgress, { stiffness: 90, damping: 24, mass: 0.6 });
@@ -66,7 +68,7 @@ export function MuseumScene({ onDone }: { onDone: () => void }) {
           </div>
 
           {exhibits.map((ex, i) => (
-            <Artwork key={ex.image} index={i} progress={progress} lightX={lightX} onOpen={() => setFull(i)} />
+            <Artwork key={i} ex={ex} index={i} panels={panels} progress={progress} lightX={lightX} onOpen={() => setFull(i)} />
           ))}
 
           <div className="museum-panel museum-exit">
@@ -80,7 +82,7 @@ export function MuseumScene({ onDone }: { onDone: () => void }) {
       </div>
 
       <AnimatePresence>
-        {full !== null && <FullView index={full} onClose={() => setFull(null)} />}
+        {full !== null && <FullView ex={exhibits[full]} index={full} onClose={() => setFull(null)} />}
       </AnimatePresence>
 
       {leaving && (
@@ -99,14 +101,15 @@ export function MuseumScene({ onDone }: { onDone: () => void }) {
 }
 
 function Artwork({
-  index, progress, lightX, onOpen,
+  ex, index, panels, progress, lightX, onOpen,
 }: {
+  ex: Exhibit;
   index: number;
+  panels: number;
   progress: MotionValue<number>;
   lightX: MotionValue<number>;
   onOpen: () => void;
 }) {
-  const ex = exhibits[index];
   // where this panel sits on the 0→1 scroll, and one step either side
   const step = 1 / (panels - 1);
   const c = (index + 1) * step;
@@ -118,10 +121,17 @@ function Artwork({
   return (
     <article className={`museum-panel museum-art museum-${ex.aspect}`} aria-label={`Exhibit ${index + 1}: ${ex.title}`}>
       <div className="museum-piece">
-        <motion.div className="spotlight" style={{ opacity: light, x: lightX }} aria-hidden="true" />
+        <motion.div className="spotlight" style={{ opacity: light, x: lightX }} aria-hidden="true">
+          {Array.from({ length: 9 }, (_, i) => (
+            <span key={i} className="mote" style={{ left: `${44 + ((i * 37) % 13)}%`, top: `${28 + ((i * 53) % 40)}%`, animationDelay: `${-i * 1.7}s` }} />
+          ))}
+        </motion.div>
         <motion.button className="museum-frame" style={{ y: artY }} onClick={onOpen} data-cursor="explore" aria-label={`View ${ex.title} full screen`}>
           <motion.span className="museum-frame-shade" style={{ opacity: shade }} aria-hidden="true" />
           <Photo src={ex.image} alt={ex.alt} aspect={ex.aspect} tone="dark" eager={index === 0} />
+          <span className="museum-reflection" aria-hidden="true">
+            <Photo src={ex.image} alt="" aspect={ex.aspect} tone="dark" />
+          </span>
         </motion.button>
       </div>
       <motion.div className="museum-label" style={{ opacity: light, y: labelY }}>
@@ -134,8 +144,7 @@ function Artwork({
   );
 }
 
-function FullView({ index, onClose }: { index: number; onClose: () => void }) {
-  const ex = exhibits[index];
+function FullView({ ex, index, onClose }: { ex: Exhibit; index: number; onClose: () => void }) {
   const close = useRef<HTMLButtonElement>(null);
   useEffect(() => close.current?.focus(), []);
   return (

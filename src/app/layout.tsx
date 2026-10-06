@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Inter, Caveat } from "next/font/google";
-import { gift } from "@/content/gift";
 import "./globals.css";
 
 const serif = Cormorant_Garamond({
@@ -13,7 +12,7 @@ const sans = Inter({ variable: "--font-sans", subsets: ["latin"] });
 const hand = Caveat({ variable: "--font-hand", subsets: ["latin"], weight: ["400", "500"] });
 
 export const metadata: Metadata = {
-  title: gift.pageTitle,
+  title: "for you",
   description: "",
   robots: { index: false, follow: false },
   icons: {

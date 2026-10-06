@@ -1,15 +1,11 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { useRef, useState } from "react";
+import { useInView } from "framer-motion";
 import type { Aspect } from "@/content/gift";
 
-/* Which image files actually exist is decided at build time
-   (see app/page.tsx), so missing photos never 404 — they show a
-   paper placeholder that tells you exactly which file to add. */
-const Available = createContext<Set<string>>(new Set());
-export const AvailableProvider = Available.Provider;
-export const useHasFile = (src: string) => useContext(Available).has(src);
-
+/* No image yet (src === "") → a quiet paper placeholder, so the
+   site looks finished before any photos are uploaded. */
 export const aspectRatio: Record<Aspect, string> = {
   portrait: "4 / 5",
   landscape: "3 / 2",
@@ -23,14 +19,22 @@ type Props = {
   className?: string;
   eager?: boolean;
   tone?: "paper" | "dark";
+  develop?: boolean; // starts washed-out, comes up like a print in the tray
 };
 
-export function Photo({ src, alt, aspect = "portrait", className = "", eager, tone = "paper" }: Props) {
-  const has = useHasFile(src);
+export function Photo({ src, alt, aspect = "portrait", className = "", eager, tone = "paper", develop }: Props) {
+  const has = !!src;
   const [loaded, setLoaded] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  const seen = useInView(box, { once: true, amount: 0.4 });
 
   return (
-    <div className={`photo photo-${tone} ${className}`} style={{ aspectRatio: aspectRatio[aspect] }}>
+    <div
+      ref={box}
+      className={`photo photo-${tone} ${className}`}
+      data-develop={develop ? (seen && loaded ? "done" : "wait") : undefined}
+      style={{ aspectRatio: aspectRatio[aspect] }}
+    >
       {has ? (
         <img
           src={src}
@@ -49,7 +53,6 @@ export function Photo({ src, alt, aspect = "portrait", className = "", eager, to
             <circle cx="44" cy="10" r="3.2" fill="none" stroke="currentColor" strokeWidth="0.8" />
           </svg>
           <span className="photo-empty-label">Your photograph</span>
-          <span className="photo-empty-path">{src.replace(/^\/images\//, "")}</span>
         </div>
       )}
     </div>

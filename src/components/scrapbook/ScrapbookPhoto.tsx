@@ -2,11 +2,9 @@
 
 import { useRef, type RefObject } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import type { Gift } from "@/content/gift";
+import type { ScrapbookPhoto as Item } from "@/content/gift";
 import { seeded, spring } from "@/lib/motion";
 import { Photo } from "../shared/Photo";
-
-type Item = Gift["scrapbook"]["photos"][number];
 
 const LONG_PRESS_MS = 650;
 
@@ -73,7 +71,7 @@ export function ScrapbookPhoto({
         }}
       >
         <motion.span className="sb-frame" layoutId={`sb-${index}`}>
-          <Photo src={item.image} alt={item.alt} aspect={item.aspect} eager={index === 0} />
+          <Photo src={item.image} alt={item.alt} aspect={item.aspect} eager={index === 0} develop />
         </motion.span>
         <span className="tape" style={{ rotate: `${tapeRot}deg` }} aria-hidden="true" />
       </motion.button>
