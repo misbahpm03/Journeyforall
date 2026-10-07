@@ -1,4 +1,4 @@
-# A Little World Made for You
+# A Little World Made for You 
 
 An interactive gift in five chapters (envelope → scrapbook → museum → garden → letter → night sky).
 One repo, deployed once per person. Everything personal is edited at **`/admin`**; nothing in the code changes.
